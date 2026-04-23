@@ -35,3 +35,49 @@ resource "azurerm_key_vault_secret" "public_key" {
     depends_on = [ azurerm_role_assignment.kv_admin ]
 }
 
+resource "azurerm_key_vault_certificate" "sslcert" {
+    key_vault_id = azurerm_key_vault.kv.id
+    name = "sslcert-${random_pet.naming.id}"
+    
+    certificate_policy {
+      issuer_parameters {
+        name = "Self"
+      }
+
+      key_properties {
+        exportable = true
+        key_size = 4096
+        key_type = "RSA"
+        reuse_key = true
+      }
+
+      lifetime_action {
+        action {
+          action_type = "AutoRenew"
+        }
+        trigger {
+          days_before_expiry = 30
+        }
+      }
+
+      secret_properties {
+        content_type = "application/x-pkcs12"
+      }
+
+      x509_certificate_properties {
+        extended_key_usage = [ "1.3.6.1.5.5.7.3.1" ]
+
+        key_usage = [ 
+            "cRLSign",
+            "dataEncipherment",
+            "digitalSignature",
+            "keyAgreement",
+            "keyCertSign",
+            "keyEncipherment"
+         ]
+
+         subject = "CN=mydemo.local"
+         validity_in_months = 1
+      }
+    }
+}
